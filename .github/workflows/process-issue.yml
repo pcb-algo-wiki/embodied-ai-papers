@@ -1,0 +1,72 @@
+name: Process Paper Issue
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  process-paper:
+    if: contains(github.event.issue.body, 'arxiv.org') || contains(github.event.issue.body, '.pdf')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install feedparser
+
+      - name: Extract paper info
+        id: extract
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+          python .github/scripts/extract_paper.py "$ISSUE_BODY"
+          
+          # Read result
+          if [ -f paper_meta.json ]; then
+            echo "arxiv_id=$(python -c "import json; print(json.load(open('paper_meta.json'))['arxiv_id'])")" >> $GITHUB_OUTPUT
+            echo "title=$(python -c "import json; print(json.load(open('paper_meta.json'))['title'])")" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create paper note
+        id: create-note
+        run: |
+          python .github/scripts/create_note.py \
+            --issue-number ${{ github.event.issue.number }} \
+            --issue-url '${{ github.event.issue.html_url }}' \
+            >> $GITHUB_STEP_SUMMARY 2>&1
+          
+          if [ -f note_path.txt ]; then
+            echo "note_path=$(cat note_path.txt)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Commit and push
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add .
+          git diff --staged --quiet || git commit -m "feat: process issue #${{ github.event.issue.number }}"
+          git push || echo "Push skipped (no changes)"
+
+      - name: Comment on issue
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let notePath = '';
+            try { notePath = fs.readFileSync('note_path.txt', 'utf8').trim(); } catch(e) {}
+            
+            const paperTitle = '${{ steps.extract.outputs.title }}'.slice(0, 100);
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo,
+              issue_number: context.issue.number,
+              body: `✅ **论文已解析完成！**\n\n📝 笔记: \`${notePath || 'papers/'}\`\n\n---\n*由 Embodied AI Papers Bot 自动处理*`
+            });
