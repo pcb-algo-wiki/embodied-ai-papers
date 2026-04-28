@@ -4,11 +4,6 @@ on:
   issues:
     types: [opened, reopened]
   workflow_dispatch:
-    inputs:
-      issue_body:
-        description: 'Issue body text'
-        required: false
-        type: string
 
 permissions:
   contents: write
@@ -17,62 +12,38 @@ permissions:
 jobs:
   process-paper:
     runs-on: ubuntu-latest
+    if: contains(github.event.issue.body, 'arxiv.org')
     steps:
-      - name: Debug trigger
+      - name: Debug
         run: |
-          echo "Trigger: ${{ github.event_name }}"
-          echo "Issue body preview: ${{ github.event.issue.body }}"
-          echo "Issue number: ${{ github.event.issue.number }}"
-
-      - name: Check if contains arXiv link
-        id: check
-        run: |
-          BODY="${{ github.event.issue.body }}"
-          if echo "$BODY" | grep -q "arxiv.org"; then
-            echo "has_arxiv=true" >> $GITHUB_OUTPUT
-          else
-            echo "has_arxiv=false" >> $GITHUB_OUTPUT
-          fi
-
+          echo "Issue: ${{ github.event.issue.number }}"
+          echo "Has arxiv: ${{ contains(github.event.issue.body, 'arxiv.org') }}"
       - name: Checkout repo
-        if: steps.check.outputs.has_arxiv == 'true'
         uses: actions/checkout@v4
 
       - name: Set up Python
-        if: steps.check.outputs.has_arxiv == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
       - name: Install dependencies
-        if: steps.check.outputs.has_arxiv == 'true'
         run: pip install feedparser
 
       - name: Extract paper info
-        if: steps.check.outputs.has_arxiv == 'true'
-        id: extract
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
-        run: |
-          python .github/scripts/extract_paper.py "$ISSUE_BODY"
-          if [ -f paper_meta.json ]; then
-            echo "arxiv_id=$(python -c "import json; print(json.load(open('paper_meta.json'))['arxiv_id'])")" >> $GITHUB_OUTPUT
-            echo "title=$(python -c "import json; print(json.load(open('paper_meta.json'))['title'])")" >> $GITHUB_OUTPUT
-          fi
+        run: python .github/scripts/extract_paper.py "$ISSUE_BODY"
 
       - name: Create paper note
-        if: steps.check.outputs.has_arxiv == 'true'
-        id: create-note
+        env:
+          ISSUE_NUM: ${{ github.event.issue.number }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
         run: |
           python .github/scripts/create_note.py \
-            --issue-number ${{ github.event.issue.number }} \
-            --issue-url '${{ github.event.issue.html_url }}'
-          if [ -f note_path.txt ]; then
-            echo "note_path=$(cat note_path.txt)" >> $GITHUB_OUTPUT
-          fi
+            --issue-number "$ISSUE_NUM" \
+            --issue-url "$ISSUE_URL"
 
       - name: Commit and push
-        if: steps.check.outputs.has_arxiv == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
@@ -81,20 +52,10 @@ jobs:
           git push
 
       - name: Comment on issue
-        if: steps.check.outputs.has_arxiv == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NOTE_PATH: ${{ steps.create-note.outputs.note_path }}
           ISSUE_NUM: ${{ github.event.issue.number }}
-          PAPER_TITLE: ${{ steps.extract.outputs.title }}
         run: |
-          gh issue comment $ISSUE_NUM \
-            --repo ${{ github.repository }} \
-            --body "✅ **论文已解析完成！**
-
-**${PAPER_TITLE}**
-
-📝 笔记: \`${NOTE_PATH:-papers/}\`
-
----
-*由 Embodied AI Papers Bot 自动处理*"
+          gh issue comment "$ISSUE_NUM" \
+            --repo "${{ github.repository }}" \
+            --body "✅ **论文已解析完成！**"
