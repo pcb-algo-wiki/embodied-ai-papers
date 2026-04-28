@@ -39,6 +39,9 @@ def generate_note(meta: dict, issue_number: int, issue_url: str) -> str:
     if len(authors) > 5:
         author_str += f" et al. (+{len(authors)-5})"
     
+    # 截取摘要前 2 句作为一句话总结
+    summary_short = ". ".join(summary.split(".")[:2]) if summary else "TODO: 填写"
+
     note = f"""---
 title: "{title}"
 created: {today}
@@ -46,7 +49,7 @@ arxiv_id: {arxiv_id}
 source_issue: "{issue_url}"
 source_issue_number: {issue_number}
 tags: [embodied-ai]
-summary: ""
+summary: "{summary[:200]}"
 authors: "{author_str}"
 published: "{published}"
 pdf: {pdf_url}
@@ -64,20 +67,22 @@ pdf: {pdf_url}
 ---
 
 ## 📌 一句话总结
-TODO: 填写
+{summary_short}
 
 
 ## 🎯 核心贡献
-1. 
-2. 
-3. 
+1. TODO: 填写
+2. TODO: 填写
+3. TODO: 填写
 
 
 ## 🔧 关键技术方案
 ### 任务/场景
+TODO: 填写
 
 
 ### 方法架构
+TODO: 填写
 
 
 ## 📊 实验结果
@@ -87,16 +92,16 @@ TODO: 填写
 
 
 ## 🔑 重要发现
-- 
+- TODO: 填写
 
 
 ## ⚠️ 局限性
-- 
+- TODO: 填写
 
 
 ## 💬 个人笔记
-> **疑问**: 
-> **想法**: 
+> **疑问**:
+> **想法**:
 
 
 ## 📚 相关工作
