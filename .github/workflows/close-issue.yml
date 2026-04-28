@@ -1,0 +1,33 @@
+name: Close Issue on PR Merge
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  issues: write
+
+jobs:
+  close-issue:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - name: Extract issue number from PR body
+        id: extract
+        run: |
+          # PR body may contain "Closes #N" or "Fixes #N" or "Resolves #N"
+          BODY="${{ github.event.pull_request.body }}"
+          echo "PR body: $BODY"
+          
+          # Extract first issue number after Closes/Fixes/Resolves
+          ISSUE_NUM=$(echo "$BODY" | grep -oE '(Closes|Fixes|Resolves)\s+#([0-9]+)' | head -1 | grep -oE '[0-9]+')
+          echo "Extracted issue number: $ISSUE_NUM"
+          echo "issue_num=$ISSUE_NUM" >> "$GITHUB_OUTPUT"
+
+      - name: Close issue
+        if: steps.extract.outputs.issue_num != ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUM: ${{ steps.extract.outputs.issue_num }}
+        run: |
+          gh issue close "$ISSUE_NUM" --repo "${{ github.repository }}"
