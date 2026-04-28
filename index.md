@@ -4,6 +4,7 @@
 
 ## Papers
 - [Visual Instruction Tuning](papers/2026-04/visual-instruction-tuning.md) — `2304.08485` | Haotian Liu, Chunyuan Li, Qingyang Wu
+- [Visual Instruction Tuning](papers/2026-04/visual-instruction-tuning.md) — `2304.08485` | Haotian Liu, Chunyuan Li, Qingyang Wu
 - [ClusT3: Information Invariant Test-Time Training](papers/2026-04/clust3-information-invariant-test-time-training.md) — `2310.12345` | Gustavo A. Vargas Hakim, David Osowiechi, Mehrdad Noori
 
 <!-- 新论文自动追加在此 -->
