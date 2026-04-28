@@ -3,6 +3,12 @@ name: Process Paper Issue
 on:
   issues:
     types: [opened]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: 'Issue number to process'
+        required: false
+        type: number
 
 permissions:
   contents: write
