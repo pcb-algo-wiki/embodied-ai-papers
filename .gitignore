@@ -1,0 +1,9 @@
+# Temporary / generated files
+paper_meta.json
+note_path.txt
+__pycache__/
+*.pyc
+
+# OS
+.DS_Store
+__pycache__/
