@@ -4,6 +4,10 @@ on:
   issues:
     types: [opened]
 
+permissions:
+  contents: write
+  issues: write
+
 jobs:
   process-paper:
     if: contains(github.event.issue.body, 'arxiv.org') || contains(github.event.issue.body, '.pdf')
