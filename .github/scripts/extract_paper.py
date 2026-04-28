@@ -5,8 +5,9 @@
 
 import re
 import sys
+import os
+import json
 import urllib.request
-import urllib.parse
 import xml.etree.ElementTree as ET
 
 def extract_arxiv_id(text):
@@ -87,7 +88,6 @@ def main():
         f.write(f"published={meta['published']}\n")
 
     # 也输出 JSON 供后续脚本使用
-    import json
     with open("paper_meta.json", "w") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
 
